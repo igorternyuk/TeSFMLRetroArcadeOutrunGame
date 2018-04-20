@@ -11,8 +11,9 @@ public:
 private:
     const std::string WINDOW_TITLE { "Outrun" };
     enum {
-        WINDOW_WIDTH = 1024,
-        WINDOW_HEIGHT = 768,
+        SCREEN_WIDTH = 1024,
+        SCREEN_HEIGHT = 704,
+        SEGMENT_HEIGHT = 32,
         TRACK_WIDTH = 2000,
         SEGMENT_LENGTH = 200,
         NUM_LINES = 1600,
@@ -24,6 +25,8 @@ private:
     sf::Font mFont;
     sf::Texture mBackgroundTexture;
     sf::Sprite mSpriteBackground;
+    sf::Texture mCarTexture;
+    sf::Sprite mCarSprite;
 
     struct Player
     {
@@ -61,20 +64,25 @@ private:
         void project(int camX, int camY, int camZ)
         {
             scale = 0.84f / (z - camZ);
-            X = (1 + scale * (x - camX)) * WINDOW_WIDTH / 2;
-            Y = (1 - scale * (y - camY)) * WINDOW_HEIGHT / 2;
-            W = scale * TRACK_WIDTH * WINDOW_WIDTH / 2;
+            X = (1 + scale * (x - camX)) * SCREEN_WIDTH / 2;
+            Y = (1 - scale * (y - camY)) * SCREEN_HEIGHT / 2;
+            W = scale * TRACK_WIDTH * SCREEN_WIDTH / 2;
         }
     };
 
     Player mPlayer;
     std::vector<Line> mLines;
     int mStartPos;
+    float mCarPos = 0.0f;
     void startNewGame();
     void createLines();
     void processEvents();
     void update(sf::Time delta);
     void render();
+    void updateRetro();
+    void renderRetro();
+    void updateFamtrinli();
+    void renderFamtrinli();
 
     void centralizeWindow();
     void loadFonts();
@@ -83,4 +91,9 @@ private:
     void drawQuad(sf::RenderWindow &window, int nearMidPointX, int nearMidPointY,
                   int nearWidth, int farMidPointX, int farMidPointY, int farWidth,
                   sf::Color color = {0,255,0});
+    void drawQuad(sf::RenderWindow &window, const sf::Vector2f &bottomLeft,
+                  const sf::Vector2f &topLeft, const sf::Vector2f &topRight,
+                  const sf::Vector2f &bottomRight, sf::Color color = sf::Color(0,255,0));
+    void drawRect(sf::RenderWindow &window, sf::Color color, float x, float y,
+                  float width = SEGMENT_HEIGHT, float height = SEGMENT_HEIGHT);
 };
