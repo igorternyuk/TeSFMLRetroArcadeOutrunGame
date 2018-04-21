@@ -13,7 +13,7 @@ private:
     enum {
         SCREEN_WIDTH = 1024,
         SCREEN_HEIGHT = 704,
-        SEGMENT_HEIGHT = 32,
+        SEGMENT_HEIGHT = 2,
         TRACK_WIDTH = 2000,
         SEGMENT_LENGTH = 200,
         NUM_LINES = 1600,
@@ -73,10 +73,25 @@ private:
     Player mPlayer;
     std::vector<Line> mLines;
     int mStartPos;
+    /////////////////////////
     float mCarPos = 0.0f;
+    float mDistance = 0.0f;
+    float mCarSpeed = 0.0f;
+    bool mIsBraking = false;
+    struct Segment
+    {
+        float curvature, distance;
+        //Segment() { curvature = distance = 0.0f; }
+    };
+    std::vector<Segment> mTrack;
+    float mCurrCurvature = 0.0f, mTargetCurvature = 0.0f, mCurvatureDiff = 0.0f;
+    ///////////////////////
     void startNewGame();
+    void createTrack();
     void createLines();
     void processEvents();
+    double oscillatoryFunction(double x, double frequency,
+                               double phase, double exponent = 3);
     void update(sf::Time delta);
     void render();
     void updateRetro();

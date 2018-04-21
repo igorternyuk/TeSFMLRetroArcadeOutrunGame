@@ -16,7 +16,28 @@ Game::Game():
 
 void Game::startNewGame()
 {
-    createLines();
+    //createLines();
+    createTrack();
+}
+
+void Game::createTrack()
+{
+    mTrack.push_back({0.f, 50.f});
+    mTrack.push_back({0.f, 20.f});
+    mTrack.push_back({0.3f, 50.f});
+    mTrack.push_back({0.5f, 50.f});
+    mTrack.push_back({0.6f, 50.f});
+    mTrack.push_back({0.8f, 50.f});
+    mTrack.push_back({0.6f, 50.f});
+    mTrack.push_back({0.2f, 50.f});
+    mTrack.push_back({0.0f, 50.f});
+    mTrack.push_back({-0.1f, 50.f});
+    mTrack.push_back({-0.2f, 50.f});
+    mTrack.push_back({-0.5f, 50.f});
+    mTrack.push_back({-0.7f, 50.f});
+    mTrack.push_back({-0.5f, 50.f});
+    mTrack.push_back({-0.3f, 50.f});
+    mTrack.push_back({-0.1f, 50.f});
 }
 
 void Game::createLines()
@@ -55,7 +76,7 @@ void Game::run()
             //std::cout << "То шо я думаю" << std::endl;
             timeSinceLastUpdate -= mTimePerFrame;
             //std::cout << "timeSinceLastUpdate = " << timeSinceLastUpdate.asSeconds() << std::endl;
-            processEvents();
+            //processEvents();
             update(mTimePerFrame);
         }
         render();
@@ -90,7 +111,7 @@ void Game::processEvents()
         }
     }
 
-    mPlayer.speed = 0;
+    /*mPlayer.speed = 0;
     mPlayer.posX = 0;
 
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
@@ -109,13 +130,212 @@ void Game::processEvents()
         mPlayer.speed = -200;
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) mCameraHeight += 100;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) mCameraHeight -= 100;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) mCameraHeight -= 100;*/
+}
+
+double Game::oscillatoryFunction(double x, double frequency, double phase,
+                                 double exponent)
+{
+    return sin(frequency * pow(1.0f - x, exponent) + phase);
 }
 
 void Game::update(sf::Time delta)
 {
-    auto frameTime = delta.asMicroseconds();
+    auto frameTime = delta.asSeconds();
+    //std::cout << "mTimePerFrame = " << frameTime << std::endl;
     //updateFamtrinli();
+    sf::Event event;
+    while(mWindow.pollEvent(event)){
+        if(event.type == sf::Event::Closed)
+        {
+            mWindow.close();
+        }
+        else if(event.type == sf::Event::MouseButtonReleased)
+        {
+            if(event.mouseButton.button == sf::Mouse::Left)
+            {
+                std::cout << " mx = " << event.mouseButton.x << " my = "
+                          << event.mouseButton.y << std::endl;
+            }
+        }
+        /*else if(event.type == sf::Event::KeyReleased){
+            if(event.key.code == sf::Keyboard::S)
+            {
+                std::cout << "brake" << std::endl;
+                if(mCarSpeed > 0.0f) mIsBraking = true;
+            }
+        }*/
+    }
+
+    //Steering
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::A) ||
+            sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
+        mCarPos -= 0.1f * frameTime;
+    } else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D) ||
+              sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
+        mCarPos += 0.1f * frameTime;
+    }
+
+    if(mCarSpeed != 0.0f)
+        std::cout << "mCarSpeed before input = " << mCarSpeed << std::endl;
+
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
+        mCarSpeed += 2.0f * frameTime;
+        std::cout << "acceleration" << std::endl;
+        //mIsBraking = false;
+    } else {
+        std::cout << "brake" << std::endl;
+        mCarSpeed -= 1.0f * frameTime;
+        //mIsBraking = true;
+    }
+
+    /*if(mIsBraking)
+    {
+        std::cout << "slowdown" << std::endl;
+        mCarSpeed -= 1.0f * frameTime;
+    }*/
+
+    if(mCarSpeed < 0.0f)
+    {
+        mCarSpeed = 0.0f;
+    }
+    else if(mCarSpeed > 1.0f)
+    {
+        mCarSpeed = 1.0f;
+    }
+
+    mDistance += 85.0f * mCarSpeed * frameTime;
+
+    if(mCarSpeed != 0.0f)
+        std::cout << "mDistance = " << mDistance << std::endl;
+
+    float offset = 0.f;
+    int trackSection = 0;
+
+    //Find position on the track
+    while(trackSection < mTrack.size() && offset < mDistance){
+        offset += mTrack[trackSection].distance;
+        ++trackSection;
+    }
+    if(trackSection >= 16){
+        trackSection = 0;
+        mDistance = 0.f;
+    }
+    mTargetCurvature = mTrack[trackSection].curvature;
+    //mCurvatureDiff = (mTargetCurvature - mCurrCurvature) * frameTime;
+    mCurrCurvature += (mTargetCurvature - mCurrCurvature) * frameTime * mCarSpeed;
+    /*std::cout << "mCurrCurvature = " << mCurrCurvature << std::endl;
+    std::cout << "mTargetCurvature = " << mTargetCurvature << std::endl;
+    std::cout << "trackSection = " << trackSection << std::endl;
+    std::cout << "mDistance = " << mDistance << std::endl;*/
+    if(mCarSpeed != 0.0f)
+        std::cout << "mCarSpeed after input = " << mCarSpeed << std::endl;
+
+}
+
+
+
+void Game::renderRetro()
+{
+    float middlePoint = 0.5f + mCurrCurvature;
+    float clipWidth = 0.03f;
+    float centerLineWidth = 0.00125f;
+    float endRoadWidth = 0.1f;
+    endRoadWidth *= 0.5f;
+
+    int prevleftGrass = (middlePoint - endRoadWidth - clipWidth) * SCREEN_WIDTH;
+    int prevLeftClip = (middlePoint - endRoadWidth) * SCREEN_WIDTH;
+    int prevLeftCenterLine = (middlePoint - 0.5f * centerLineWidth) * SCREEN_WIDTH;
+    int prevRightCenterLine = (middlePoint + 0.5f * centerLineWidth) * SCREEN_WIDTH;
+    int prevRightGrass = (middlePoint + endRoadWidth + clipWidth) * SCREEN_WIDTH;
+    int prevRightClip = (middlePoint + endRoadWidth) * SCREEN_WIDTH;
+
+
+    for(int y = 1; y < SCREEN_HEIGHT / 2; y += SEGMENT_HEIGHT)
+    {
+        float perspective = (float)y / (SCREEN_HEIGHT / 2.0f);
+        middlePoint = 0.5f + mCurrCurvature * pow(1.0f - perspective, 3);
+        float roadWidth = 0.1f + 0.8f * perspective;
+        roadWidth *= 0.5f;
+        centerLineWidth = 0.0025f + 0.025f * perspective;
+        centerLineWidth *= 0.5f;
+
+        int leftGrass = (middlePoint - roadWidth - clipWidth) * SCREEN_WIDTH;
+        int leftClip = (middlePoint - roadWidth) * SCREEN_WIDTH;
+        int leftCenterLine = (middlePoint - centerLineWidth) * SCREEN_WIDTH;
+        int rightCenterLine = (middlePoint + centerLineWidth) * SCREEN_WIDTH;
+        int rightGrass = (middlePoint + roadWidth + clipWidth) * SCREEN_WIDTH;
+        int rightClip = (middlePoint + roadWidth) * SCREEN_WIDTH;
+        int row = SCREEN_HEIGHT / 2 + y + SEGMENT_HEIGHT;
+        //oscillatoryFunction(1.0f, 30.f, mDistance);
+        sf::Color grassColor = oscillatoryFunction(perspective, 30.f, 0.1f * mDistance) > 0.0f
+                ? sf::Color::Green : sf::Color(0,180,0);
+        sf::Color clipColor = oscillatoryFunction(perspective, 60.f, 10.f * mDistance, 2) > 0.0f
+                ? sf::Color::Red : sf::Color::White;
+        sf::Color centerLineColor = oscillatoryFunction(perspective, 60.f, 10.f * mDistance, 2) > 0.0f
+                ? sf::Color(180,180,180) : sf::Color::White;
+        //Left grass
+        drawQuad(mWindow, sf::Vector2f(0, row),
+                 sf::Vector2f(0, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(prevleftGrass, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(leftGrass, row),grassColor);
+
+        //Left clip
+        drawQuad(mWindow, sf::Vector2f(leftGrass, row),
+                 sf::Vector2f(prevleftGrass, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(prevLeftClip, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(leftClip, row),clipColor);
+
+        //Left road
+        drawQuad(mWindow, sf::Vector2f(leftClip, row),
+                 sf::Vector2f(prevLeftClip, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(prevLeftCenterLine, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(leftCenterLine, row),sf::Color(180,180,180));
+
+        //Center line
+        drawQuad(mWindow, sf::Vector2f(leftCenterLine, row),
+                 sf::Vector2f(prevLeftCenterLine, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(prevRightCenterLine, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(rightCenterLine, row),centerLineColor);
+
+        //RightRoad
+        drawQuad(mWindow, sf::Vector2f(rightCenterLine, row),
+                 sf::Vector2f(prevRightCenterLine, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(prevRightClip, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(rightClip, row),sf::Color(180,180,180));
+
+        //Right clip
+        drawQuad(mWindow, sf::Vector2f(rightClip, row),
+                 sf::Vector2f(prevRightClip, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(prevRightGrass, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(rightGrass, row),clipColor);
+
+        //Right grass
+        drawQuad(mWindow, sf::Vector2f(rightGrass, row),
+                 sf::Vector2f(prevRightGrass, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(SCREEN_WIDTH, row - SEGMENT_HEIGHT),
+                 sf::Vector2f(SCREEN_WIDTH, row),grassColor);
+
+        prevleftGrass = leftGrass;
+        prevLeftClip = leftClip;
+        prevLeftCenterLine = leftCenterLine;
+        prevRightCenterLine = rightCenterLine;
+        prevRightGrass = rightGrass;
+        prevRightClip = rightClip;
+
+        int carPos = SCREEN_WIDTH / 2 + int(SCREEN_WIDTH * mCarPos / 2.0f) -
+                mCarSprite.getGlobalBounds().width / 2;
+        mCarSprite.setPosition(carPos, SCREEN_HEIGHT - mCarSprite.getGlobalBounds().height - 5);
+        float w = mCarSprite.getGlobalBounds().width;
+        float h = mCarSprite.getGlobalBounds().height;
+        mCarSprite.setOrigin(w / 2, h / 2);
+        float angle = 0;
+        if(mCarPos != 0.f){
+            angle = mCarPos > 0.f ? 20.f : -20.f;
+        }
+        mCarSprite.setRotation(angle);
+        mWindow.draw(mCarSprite);
+    }
 }
 
 void Game::render()
@@ -124,85 +344,6 @@ void Game::render()
     //renderFamtrinli();
     renderRetro();
     mWindow.display();
-}
-
-void Game::updateRetro()
-{
-
-}
-
-void Game::renderRetro()
-{
-    float middlePoint = 0.5f;
-    float clipWidth = 0.03f;
-    float endRoadWidth = 0.03f;
-    endRoadWidth *= 0.5f;
-
-    int prevleftGrass = (middlePoint - endRoadWidth - clipWidth) * SCREEN_WIDTH;
-    int prevLeftClip = (middlePoint - endRoadWidth) * SCREEN_WIDTH;
-    int prevRightGrass = (middlePoint + endRoadWidth + clipWidth) * SCREEN_WIDTH;
-    int prevRightClip = (middlePoint + endRoadWidth) * SCREEN_WIDTH;
-
-
-    for(int y = 1; y < SCREEN_HEIGHT / 2; y += SEGMENT_HEIGHT)
-    {
-        float perspective = (float)y / (SCREEN_HEIGHT / 2.0f);
-        float roadWidth = 0.1f + 0.8f * perspective;
-        roadWidth *= 0.5f;
-
-        int leftGrass = (middlePoint - roadWidth - clipWidth) * SCREEN_WIDTH;
-        int leftClip = (middlePoint - roadWidth) * SCREEN_WIDTH;
-        int rightGrass = (middlePoint + roadWidth + clipWidth) * SCREEN_WIDTH;
-        int rightClip = (middlePoint + roadWidth) * SCREEN_WIDTH;
-        int row = SCREEN_HEIGHT / 2 + y + SEGMENT_HEIGHT;
-        /*drawRect(mWindow, sf::Color::Green, 0, row, leftGrass, SEGMENT_HEIGHT);
-        drawRect(mWindow, sf::Color::Red, leftGrass, row, leftClip - leftGrass, SEGMENT_HEIGHT);
-        drawRect(mWindow, sf::Color(200,200,200), leftClip, row, rightClip - leftClip, SEGMENT_HEIGHT);
-        drawRect(mWindow, sf::Color::Red, rightClip, row, rightGrass - rightClip, SEGMENT_HEIGHT);
-        drawRect(mWindow, sf::Color::Green, rightGrass, row, SCREEN_WIDTH - rightGrass, SEGMENT_HEIGHT);*/
-
-        /*for(int x = 0; x < SCREEN_WIDTH; ++x){
-        }*/
-        //Left grass
-        drawQuad(mWindow, sf::Vector2f(0, row),
-                 sf::Vector2f(0, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(prevleftGrass, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(leftGrass, row),sf::Color::Green);
-
-        //Left clip
-        drawQuad(mWindow, sf::Vector2f(leftGrass, row),
-                 sf::Vector2f(prevleftGrass, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(prevLeftClip, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(leftClip, row),sf::Color::Red);
-
-        //Road
-        drawQuad(mWindow, sf::Vector2f(leftClip, row),
-                 sf::Vector2f(prevLeftClip, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(prevRightClip, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(rightClip, row),sf::Color(200,200,200));
-
-        //Right clip
-        drawQuad(mWindow, sf::Vector2f(rightClip, row),
-                 sf::Vector2f(prevRightClip, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(prevRightGrass, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(rightGrass, row),sf::Color::Red);
-
-        //Right grass
-        drawQuad(mWindow, sf::Vector2f(rightGrass, row),
-                 sf::Vector2f(prevRightGrass, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(SCREEN_WIDTH, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(SCREEN_WIDTH, row),sf::Color::Green);
-
-        prevleftGrass = leftGrass;
-        prevLeftClip = leftClip;
-        prevRightGrass = rightGrass;
-        prevRightClip = rightClip;
-
-        int carPos = SCREEN_WIDTH / 2 + int(SCREEN_WIDTH * mCarPos / 2.0f) -
-                mCarSprite.getGlobalBounds().width / 2;
-        mCarSprite.setPosition(carPos, SCREEN_HEIGHT - mCarSprite.getGlobalBounds().height - 5);
-        mWindow.draw(mCarSprite);
-    }
 }
 
 void Game::updateFamtrinli()
