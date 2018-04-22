@@ -29,33 +29,47 @@ private:
     sf::Sprite mCarSprite;
     sf::Text mGameInfo;
 
-    /////////////////////////
-    float mCarPos = 0.0f;
-    float mCarSpeed = 0.0f;
-    float mDistance = 0.0f;
-    int mTrackSection = 0;
+    struct Car
+    {
+        float position = 0.0f;
+        float speed = 0.0f;
+        float traveledDistance = 0.0f;
+        float trajectoryCurvature = 0.0f;
+        float currElapsedTime = 0.0f;
+        sf::Sprite sprite;
+        void processEvents(float frameTime, float currTrackCurvature);
+        void update(float frameTime);
+        void render(sf::RenderWindow &window);
+    };
+
+    Car mCar;
+
     struct Segment
     {
         float curvature, distance;
     };
+
     std::vector<Segment> mTrack;
+    size_t mTrackSection = 0;
     float mTargetCurvature = 0.0f;
     float mCurrTrackCurvature = 0.0f;
-    float mPlayerCurvature = 0.0f;
-    float mCurrentElapsedTime = 0.0f;
+    float mTrackDistance = 0.0f;
+    float mTotalDistance;
     std::list<float> mElapsedTimes;
-    ///////////////////////
     void startNewGame();
-    void createTrack();
+    void createDefaultTrack();
     void processEvents(float frameTime);
     void update(float frameTime);
     void render();
     void renderBackground();
+    void renderCar();
     void renderTextInfo();
     void centralizeWindow();
+    void loadTrackConfiguration(const std::string pathToFile);
     void loadFonts();
     void loadTextures();
     void configureTextInfo();
+    double hillHeightFunction(double x);
     double oscillatoryFunction(double x, double frequency,
                                double phase, double exponent = 3);
     void drawQuad(sf::RenderWindow &window, const sf::Vector2f &bottomLeft,
