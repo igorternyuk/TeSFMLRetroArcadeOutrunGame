@@ -11,19 +11,19 @@ Game::Game():
     mWindow.setFramerateLimit(FPS);
     loadFonts();
     loadTextures();
+    configureTextInfo();
     startNewGame();
 }
 
 void Game::startNewGame()
 {
-    //createLines();
     createTrack();
 }
 
 void Game::createTrack()
 {
-    mTrack.push_back({0.f, 50.f});
-    mTrack.push_back({0.f, 20.f});
+    mTrack.push_back({0.f, 10.f});
+    mTrack.push_back({0.f, 00.f});
     mTrack.push_back({0.3f, 50.f});
     mTrack.push_back({0.5f, 50.f});
     mTrack.push_back({0.6f, 50.f});
@@ -40,110 +40,27 @@ void Game::createTrack()
     mTrack.push_back({-0.1f, 50.f});
 }
 
-void Game::createLines()
-{
-    mLines.reserve(NUM_LINES);
-
-    for(auto i = 0; i < NUM_LINES; ++i)
-    {
-        Line line;
-        line.z = i * SEGMENT_LENGTH;
-        if(i >= 300 && i < 700)
-        {
-            line.curvature = 0.5f;
-        } else if(i > 1100){
-            line.curvature = -0.7;
-        }
-        if (i>750)
-        {
-            line.y = sin(i/30.0)*1500;
-        }
-        mLines.push_back(line);
-    }
-}
-
-
 void Game::run()
 {
     sf::Clock clock;
     sf::Time timeSinceLastUpdate = sf::Time::Zero;
+    auto delta = mTimePerFrame.asSeconds();
     while(mWindow.isOpen())
     {
         timeSinceLastUpdate += clock.restart();
         //std::cout << "timeSinceLastUpdate = " << timeSinceLastUpdate.asSeconds() << std::endl;
         //std::cout << "mTimePerFrame = " << mTimePerFrame.asSeconds() << std::endl;
         while(timeSinceLastUpdate > mTimePerFrame){
-            //std::cout << "То шо я думаю" << std::endl;
             timeSinceLastUpdate -= mTimePerFrame;
-            //std::cout << "timeSinceLastUpdate = " << timeSinceLastUpdate.asSeconds() << std::endl;
-            //processEvents();
-            update(mTimePerFrame);
+            processEvents(delta);
+            update(delta);
         }
         render();
     }
 }
 
-void Game::processEvents()
+void Game::processEvents(float frameTime)
 {
-    sf::Event event;
-    while(mWindow.pollEvent(event)){
-        if(event.type == sf::Event::Closed)
-        {
-            mWindow.close();
-        }
-        /*else if(event.type == sf::Event::MouseWheelScrolled)
-        {
-           float delta = event.mouseWheelScroll.delta;
-           if(delta > 0)
-           {
-               //cameraY += 10;
-           } else if( delta < 0){
-               //cameraY -= 10;
-           }
-        }*/
-        else if(event.type == sf::Event::MouseButtonReleased)
-        {
-            if(event.mouseButton.button == sf::Mouse::Left)
-            {
-                std::cout << " mx = " << event.mouseButton.x << " my = "
-                          << event.mouseButton.y << std::endl;
-            }
-        }
-    }
-
-    /*mPlayer.speed = 0;
-    mPlayer.posX = 0;
-
-    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-    {
-        mPlayer.posX -= 0.1;
-        std::cout << "Moving left" << std::endl;
-    } else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-    {
-        mPlayer.posX += 0.1;
-        std::cout << "Moving right" << std::endl;
-    }
-
-    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-        mPlayer.speed = 200;
-    else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-        mPlayer.speed = -200;
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) mCameraHeight += 100;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) mCameraHeight -= 100;*/
-}
-
-double Game::oscillatoryFunction(double x, double frequency, double phase,
-                                 double exponent)
-{
-    return sin(frequency * pow(1.0f - x, exponent) + phase);
-}
-
-void Game::update(sf::Time delta)
-{
-    auto frameTime = delta.asSeconds();
-    //std::cout << "mTimePerFrame = " << frameTime << std::endl;
-    //updateFamtrinli();
     sf::Event event;
     while(mWindow.pollEvent(event)){
         if(event.type == sf::Event::Closed)
@@ -158,87 +75,76 @@ void Game::update(sf::Time delta)
                           << event.mouseButton.y << std::endl;
             }
         }
-        /*else if(event.type == sf::Event::KeyReleased){
-            if(event.key.code == sf::Keyboard::S)
-            {
-                std::cout << "brake" << std::endl;
-                if(mCarSpeed > 0.0f) mIsBraking = true;
-            }
-        }*/
     }
 
     //Steering
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::A) ||
             sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
-        mCarPos -= 0.1f * frameTime;
+        mPlayerCurvature -= 0.6f * frameTime;
+        mCarSprite.setTextureRect(sf::IntRect(216,144,38,23));
+        //mCarSprite.setRotation(-20.f);
+
     } else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D) ||
               sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
-        mCarPos += 0.1f * frameTime;
-    }
-
-    if(mCarSpeed != 0.0f)
-        std::cout << "mCarSpeed before input = " << mCarSpeed << std::endl;
-
-    if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
-        mCarSpeed += 2.0f * frameTime;
-        std::cout << "acceleration" << std::endl;
-        //mIsBraking = false;
+        mPlayerCurvature += 0.6f * frameTime;
+        //mCarSprite.setRotation(20.f);
+        mCarSprite.setTextureRect(sf::IntRect(304,144,38,23));
     } else {
-        std::cout << "brake" << std::endl;
-        mCarSpeed -= 1.0f * frameTime;
-        //mIsBraking = true;
+        //mCarSprite.setRotation(0.0f);
+        mCarSprite.setTextureRect(sf::IntRect(264,144,32,23));
     }
 
-    /*if(mIsBraking)
+    if(fabs(mPlayerCurvature - mCurrTrackCurvature) >= 0.65f)
     {
-        std::cout << "slowdown" << std::endl;
-        mCarSpeed -= 1.0f * frameTime;
-    }*/
-
-    if(mCarSpeed < 0.0f)
-    {
-        mCarSpeed = 0.0f;
-    }
-    else if(mCarSpeed > 1.0f)
-    {
-        mCarSpeed = 1.0f;
+        mCarSpeed -= 5.0f * frameTime;
+        if(mCarSpeed < 0.0f) mCarSpeed = 0.0f;
     }
 
-    mDistance += 85.0f * mCarSpeed * frameTime;
-
-    if(mCarSpeed != 0.0f)
-        std::cout << "mDistance = " << mDistance << std::endl;
-
-    float offset = 0.f;
-    int trackSection = 0;
-
-    //Find position on the track
-    while(trackSection < mTrack.size() && offset < mDistance){
-        offset += mTrack[trackSection].distance;
-        ++trackSection;
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::W) ||
+            sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
+        //Acceleration
+        mCarSpeed += 1.2f * frameTime;
+        if(mCarSpeed > 1.0f) mCarSpeed = 1.0f;
+    } else {
+        //Deceleration
+        mCarSpeed -= 0.4f * frameTime;
+        if(mCarSpeed < 0.0f) mCarSpeed = 0.0f;
     }
-    if(trackSection >= 16){
-        trackSection = 0;
-        mDistance = 0.f;
-    }
-    mTargetCurvature = mTrack[trackSection].curvature;
-    //mCurvatureDiff = (mTargetCurvature - mCurrCurvature) * frameTime;
-    mCurrCurvature += (mTargetCurvature - mCurrCurvature) * frameTime * mCarSpeed;
-    /*std::cout << "mCurrCurvature = " << mCurrCurvature << std::endl;
-    std::cout << "mTargetCurvature = " << mTargetCurvature << std::endl;
-    std::cout << "trackSection = " << trackSection << std::endl;
-    std::cout << "mDistance = " << mDistance << std::endl;*/
-    if(mCarSpeed != 0.0f)
-        std::cout << "mCarSpeed after input = " << mCarSpeed << std::endl;
-
 }
 
-
-
-void Game::renderRetro()
+void Game::update(float frameTime)
 {
-    float middlePoint = 0.5f + mCurrCurvature;
-    float clipWidth = 0.03f;
+    //auto frameTime = frameTime.asSeconds();
+    mDistance += 90.0f * mCarSpeed * frameTime;
+    mCurrentElapsedTime += frameTime;
+    float offset = 0.f;
+    mTrackSection = 0;
+    //Find position on the track
+    while(mTrackSection < mTrack.size() && offset < mDistance){
+        offset += mTrack[mTrackSection].distance;
+        ++mTrackSection;
+    }
+
+    if(mTrackSection >= mTrack.size()){
+        mElapsedTimes.push_front(mCurrentElapsedTime);
+        if(mElapsedTimes.size() > 5){
+            mElapsedTimes.pop_back();
+        }
+        mTrackSection = 0;
+        mDistance = 0.f;
+        mCurrentElapsedTime = 0.0f;
+    }
+
+    mTargetCurvature = mTrack[mTrackSection].curvature;
+    mCurrTrackCurvature += (mTargetCurvature - mCurrTrackCurvature) * frameTime * mCarSpeed;
+}
+
+void Game::render()
+{
+    mWindow.clear(sf::Color(5,181,255));
+    renderBackground();
+    float middlePoint = 0.5f + mCurrTrackCurvature;
+    float clipWidth = 0.025f;
     float centerLineWidth = 0.00125f;
     float endRoadWidth = 0.1f;
     endRoadWidth *= 0.5f;
@@ -254,7 +160,7 @@ void Game::renderRetro()
     for(int y = 1; y < SCREEN_HEIGHT / 2; y += SEGMENT_HEIGHT)
     {
         float perspective = (float)y / (SCREEN_HEIGHT / 2.0f);
-        middlePoint = 0.5f + mCurrCurvature * pow(1.0f - perspective, 3);
+        middlePoint = 0.5f + mCurrTrackCurvature * pow(1.0f - perspective, 3);
         float roadWidth = 0.1f + 0.8f * perspective;
         roadWidth *= 0.5f;
         centerLineWidth = 0.0025f + 0.025f * perspective;
@@ -267,13 +173,15 @@ void Game::renderRetro()
         int rightGrass = (middlePoint + roadWidth + clipWidth) * SCREEN_WIDTH;
         int rightClip = (middlePoint + roadWidth) * SCREEN_WIDTH;
         int row = SCREEN_HEIGHT / 2 + y + SEGMENT_HEIGHT;
-        //oscillatoryFunction(1.0f, 30.f, mDistance);
+
         sf::Color grassColor = oscillatoryFunction(perspective, 30.f, 0.1f * mDistance) > 0.0f
                 ? sf::Color::Green : sf::Color(0,180,0);
-        sf::Color clipColor = oscillatoryFunction(perspective, 60.f, 10.f * mDistance, 2) > 0.0f
-                ? sf::Color::Red : sf::Color::White;
-        sf::Color centerLineColor = oscillatoryFunction(perspective, 60.f, 10.f * mDistance, 2) > 0.0f
+        sf::Color clipColor = oscillatoryFunction(perspective, 60.f, mDistance) > 0.0f
+                        ? sf::Color::Red : sf::Color::White;
+        sf::Color centerLineColor = oscillatoryFunction(perspective, 60.f, mDistance) > 0.0f
                 ? sf::Color(180,180,180) : sf::Color::White;
+        sf::Color trackColor = mTrackSection == 0 ? sf::Color(0,0,255,50) : sf::Color(180,180,180);
+
         //Left grass
         drawQuad(mWindow, sf::Vector2f(0, row),
                  sf::Vector2f(0, row - SEGMENT_HEIGHT),
@@ -286,11 +194,11 @@ void Game::renderRetro()
                  sf::Vector2f(prevLeftClip, row - SEGMENT_HEIGHT),
                  sf::Vector2f(leftClip, row),clipColor);
 
-        //Left road
+        //Left track lane
         drawQuad(mWindow, sf::Vector2f(leftClip, row),
                  sf::Vector2f(prevLeftClip, row - SEGMENT_HEIGHT),
                  sf::Vector2f(prevLeftCenterLine, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(leftCenterLine, row),sf::Color(180,180,180));
+                 sf::Vector2f(leftCenterLine, row), trackColor);
 
         //Center line
         drawQuad(mWindow, sf::Vector2f(leftCenterLine, row),
@@ -298,11 +206,11 @@ void Game::renderRetro()
                  sf::Vector2f(prevRightCenterLine, row - SEGMENT_HEIGHT),
                  sf::Vector2f(rightCenterLine, row),centerLineColor);
 
-        //RightRoad
+        //Right track lane
         drawQuad(mWindow, sf::Vector2f(rightCenterLine, row),
                  sf::Vector2f(prevRightCenterLine, row - SEGMENT_HEIGHT),
                  sf::Vector2f(prevRightClip, row - SEGMENT_HEIGHT),
-                 sf::Vector2f(rightClip, row),sf::Color(180,180,180));
+                 sf::Vector2f(rightClip, row), trackColor);
 
         //Right clip
         drawQuad(mWindow, sf::Vector2f(rightClip, row),
@@ -323,94 +231,87 @@ void Game::renderRetro()
         prevRightGrass = rightGrass;
         prevRightClip = rightClip;
 
-        int carPos = SCREEN_WIDTH / 2 + int(SCREEN_WIDTH * mCarPos / 2.0f) -
-                mCarSprite.getGlobalBounds().width / 2;
-        mCarSprite.setPosition(carPos, SCREEN_HEIGHT - mCarSprite.getGlobalBounds().height - 5);
-        float w = mCarSprite.getGlobalBounds().width;
-        float h = mCarSprite.getGlobalBounds().height;
-        mCarSprite.setOrigin(w / 2, h / 2);
-        float angle = 0;
-        if(mCarPos != 0.f){
-            angle = mCarPos > 0.f ? 20.f : -20.f;
-        }
-        mCarSprite.setRotation(angle);
+        float carWidth = mCarSprite.getGlobalBounds().width;
+        float carHeight = mCarSprite.getGlobalBounds().height;
+
+        mCarPos = mPlayerCurvature - mCurrTrackCurvature;
+
+        int carX = SCREEN_WIDTH / 2 + int(SCREEN_WIDTH * mCarPos / 2.0f)/* - carWidth / 2*/;
+
+        mCarSprite.setPosition(carX, SCREEN_HEIGHT - carHeight -5);
         mWindow.draw(mCarSprite);
     }
-}
-
-void Game::render()
-{
-    mWindow.clear(sf::Color::Black);
-    //renderFamtrinli();
-    renderRetro();
+    renderTextInfo();
     mWindow.display();
 }
 
-void Game::updateFamtrinli()
+void Game::renderBackground()
 {
-    mCamera.reset();
-    const int N = mLines.size();
-    mCamera.z += mPlayer.speed;
-    while(mCamera.z >= N * SEGMENT_LENGTH) mCamera.z -= N * SEGMENT_LENGTH;
-    while(mCamera.z < 0) mCamera.z += N * SEGMENT_LENGTH;
-    mStartPos = mCamera.z / SEGMENT_LENGTH;
-    mCamera.y = mLines[mStartPos].y + mCameraHeight;
-
-    if (mPlayer.speed > 0)
-    {
-        mSpriteBackground.move(-mLines[mStartPos].curvature*2,0);
-    }
-    else if (mPlayer.speed < 0)
-    {
-        mSpriteBackground.move( mLines[mStartPos].curvature*2,0);
+    float prevX = 0.0f;
+    float prevHillHeight = 0.0f;
+    const float maxHillHeight = SCREEN_HEIGHT / 5.0f;
+    for(int x = HILL_SEGMENT_WIDTH; x <= SCREEN_WIDTH; x += HILL_SEGMENT_WIDTH){
+        auto hillHeight = fabs(maxHillHeight * sin(x * 0.005f + mCurrTrackCurvature));
+        drawQuad(mWindow, sf::Vector2f(prevX, SCREEN_HEIGHT / 2),
+                 sf::Vector2f(prevX, SCREEN_HEIGHT / 2 - prevHillHeight),
+                 sf::Vector2f(x, SCREEN_HEIGHT / 2 - hillHeight),
+                 sf::Vector2f(x, SCREEN_HEIGHT / 2),
+                 sf::Color(124,169,11));
+        prevX = x;
+        prevHillHeight = hillHeight;
     }
 }
 
-void Game::renderFamtrinli()
+void Game::renderTextInfo()
 {
-    mWindow.draw(mSpriteBackground);
+    std::string info;
+    info.append("Distance: ");
+    info.append(std::to_string(mDistance));
+    info.append("\n");
+    info.append("Target curvature: ");
+    info.append(std::to_string(mTargetCurvature));
+    info.append("\n");
+    info.append("Player curvature: ");
+    info.append(std::to_string(mPlayerCurvature));
+    info.append("\n");
+    info.append("Player speed: ");
+    info.append(std::to_string(mCarSpeed));
+    info.append("\n");
+    info.append("Track curvature: ");
+    info.append(std::to_string(mCurrTrackCurvature));
+    info.append("\n");
+    info.append("Delta_curvature: ");
+    info.append(std::to_string(mPlayerCurvature - mCurrTrackCurvature));
+    info.append("\n");
+    info.append("Track section: ");
+    info.append(std::to_string(mTrackSection));
+    info.append("\n");
 
-    //Track rendering
-
-    const int N = mLines.size();
-    int maxY = SCREEN_HEIGHT;
-
-    for(int n = mStartPos; n < mStartPos + 300; ++n)
-    {
-        //std::cout << "n = " << n << " n%N = " << (n%N) << std::endl;
-        Line &currLine = mLines[n%N]; // Mod operation keeps array index in bounds
-        currLine.project(mPlayer.posX * TRACK_WIDTH - mCamera.x, mCamera.y,
-                         mStartPos * SEGMENT_LENGTH - (n >= N ? N * SEGMENT_LENGTH : 0));
-        mCamera.x += mCamera.dx;
-        mCamera.dx += currLine.curvature;
-
-        if(currLine.Y >= maxY) continue;
-        maxY = currLine.Y;
-
-       // std::cout << "l.curvature = " << currLine.curvature << std::endl;
-
-        //(n/5) - constant affects the width of alternating stripes
-        sf::Color grass  = (n / 5) % 2 ? sf::Color(16,200,16) : sf::Color(0,154,0);
-        sf::Color clip = (n / 5) % 2 ? sf::Color(255,255,255) : sf::Color(0,0,0);
-        sf::Color track   = (n / 5) % 2 ? sf::Color(107,107,107) : sf::Color(105,105,105);
-
-        Line prevLine = mLines[(n-1) % N]; //previous line
-        //1.2 - clip width
-        drawQuad(mWindow, 0, prevLine.Y, SCREEN_WIDTH, 0, currLine.Y,
-                 SCREEN_WIDTH, grass);
-        drawQuad(mWindow, prevLine.X, prevLine.Y, 1.2 * prevLine.W,
-                 currLine.X, currLine.Y, 1.2 * currLine.W, clip);
-        drawQuad(mWindow, prevLine.X, prevLine.Y, prevLine.W, currLine.X,
-                 currLine.Y, currLine.W, track);
-
-       /* std::cout << "n = " << n << " p.scale = " << prevLine.scale <<
-                     " p.X = " << prevLine.X << " p.Y = " << prevLine.Y <<
-                     " p.W = " << prevLine.W << " l.scale = " <<
-                     currLine.scale << " l.X = " << currLine.X <<
-                     " l.Y = " << currLine.Y << " l.W = " <<
-                     currLine.W << std::endl;*/
+    auto getFormattedTime = [](float elapsedTime){
+        int min = elapsedTime / 60.0f;
+        int sec = elapsedTime - min * 60;
+        int ms = (elapsedTime - (float)sec) * 1000;
+        return std::to_string(min) + " min: " + std::to_string(sec) +
+                " sec: " + std::to_string(ms) +" ms";
+    };
+    int n = 0;
+    for(auto t: mElapsedTimes){
+        info.append(std::to_string(++n) + ". ");
+        info.append(getFormattedTime(t));
+        info.append("\n");
     }
+    //mTrackSection
+    mGameInfo.setString(info);
+    mWindow.draw(mGameInfo);
 }
+
+
+double Game::oscillatoryFunction(double x, double frequency, double phase,
+                                 double exponent)
+{
+    return sin(frequency * pow(1.0f - x, exponent) + phase);
+}
+
 
 void Game::centralizeWindow()
 {
@@ -428,30 +329,24 @@ void Game::loadFonts()
 
 void Game::loadTextures()
 {
-    static const std::string pathToBackgroundImage{ "resources/images/bg.png" };
-    static const std::string pathToCarImage{ "resources/images/car.png" };
-    mBackgroundTexture.loadFromFile(pathToBackgroundImage);
-    mBackgroundTexture.setRepeated(true);
-    mSpriteBackground.setTexture(mBackgroundTexture);
-    mSpriteBackground.setTextureRect(sf::IntRect(0,0,5000,411));
-    mSpriteBackground.setPosition(-2000,0);
+    static const std::string pathToCarImage{ "resources/images/cars.png" };
     mCarTexture.loadFromFile(pathToCarImage);
     mCarTexture.setSmooth(true);
     mCarTexture.setRepeated(false);
     mCarSprite.setTexture(mCarTexture);
+    mCarSprite.setTextureRect(sf::IntRect(264,144,31,23));
+    float w = mCarSprite.getGlobalBounds().width;
+    float h = mCarSprite.getGlobalBounds().height;
+    mCarSprite.setOrigin( w / 2, h / 2);
+    mCarSprite.scale(4.0f,4.0f);
 }
 
-void Game::drawQuad(sf::RenderWindow &window, int nearMidPointX, int nearMidPointY,
-                    int nearWidth, int farMidPointX, int farMidPointY, int farWidth,
-                    sf::Color color)
+void Game::configureTextInfo()
 {
-    sf::ConvexShape shape(4);
-    shape.setFillColor(color);
-    shape.setPoint(0, sf::Vector2f(nearMidPointX - nearWidth, nearMidPointY));
-    shape.setPoint(1, sf::Vector2f(farMidPointX - farWidth, farMidPointY));
-    shape.setPoint(2, sf::Vector2f(farMidPointX + farWidth, farMidPointY));
-    shape.setPoint(3, sf::Vector2f(nearMidPointX + nearWidth, nearMidPointY));
-    window.draw(shape);
+    mGameInfo.setColor(sf::Color(180,0,0));
+    mGameInfo.setFont(mFont);
+    mGameInfo.setCharacterSize(20);
+    mGameInfo.setPosition(5, 12);
 }
 
 void Game::drawQuad(sf::RenderWindow &window, const sf::Vector2f &bottomLeft,
@@ -466,17 +361,3 @@ void Game::drawQuad(sf::RenderWindow &window, const sf::Vector2f &bottomLeft,
     shape.setPoint(3,bottomRight);
     window.draw(shape);
 }
-
-void Game::drawRect(sf::RenderWindow &window, sf::Color color, float x, float y,
-                    float width, float height)
-{
-    sf::RectangleShape rect(sf::Vector2f(width, height));
-    rect.setPosition(x,y);
-    //rect.setSize(sf::Vector2f(width, height));
-    rect.setFillColor(color);
-    window.draw(rect);
-}
-
-
-
-
