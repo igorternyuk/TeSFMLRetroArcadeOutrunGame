@@ -17,8 +17,6 @@ private:
         SEGMENT_HEIGHT = 2,
         HILL_SEGMENT_WIDTH = 8,
         TRACK_WIDTH = 2000,
-        SEGMENT_LENGTH = 200,
-        NUM_LINES = 1600,
         FPS = 60
     };
 
